@@ -72,10 +72,10 @@ jobs:
       - name: Copy Patchright Patch Scripts
         if: steps.version_check.outputs.proceed == 'true'
         run: |
-          git clone https://github.com/Kaliiiiiiiiii-Vinyzu/patchright.git
-          cp -r patchright/driver_patches ./driver_patches
-          rm -rf patchright
-          curl -s "https://raw.githubusercontent.com/Kaliiiiiiiiii-Vinyzu/patchright/refs/heads/main/patchright_driver_patch.js" | tail -n +13 >> patchright_nodejs_patch.js
+          git clone https://github.com/StudentWan/phantomwright-driver.git
+          cp -r phantomwright-driver/driver_patches ./driver_patches
+          rm -rf phantomwright-driver
+          curl -s "https://raw.githubusercontent.com/StudentWan/phantomwright-driver/refs/heads/main/patchright_driver_patch.js" | tail -n +13 >> patchright_nodejs_patch.js
 
       - name: Patch Playwright-NodeJS Package
         if: steps.version_check.outputs.proceed == 'true'
@@ -115,18 +115,18 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Publish Patchright-Core Package
+      - name: Publish Phantomwright-Core Package
         if: steps.version_check.outputs.proceed == 'true'
         run: |
-          cd playwright/packages/patchright-core/
+          cd playwright/packages/phantomwright-core/
           npm publish --access=public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish Patchright Package
+      - name: Publish Phantomwright Package
         if: steps.version_check.outputs.proceed == 'true'
         run: |
-          cd playwright/packages/patchright/
+          cd playwright/packages/phantomwright/
           npm publish --access=public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
