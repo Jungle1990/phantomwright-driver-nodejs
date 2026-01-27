@@ -1,12 +1,12 @@
 /**
- * Test script for phantomwright npm package
- * Run: npm install phantomwright && node test/test_phantomwright.js
+ * Test script for phantomwright-driver npm package
+ * Run: npm install phantomwright-driver && node test/test_phantomwright.js
  */
 
-const { chromium } = require('phantomwright');
+const { chromium } = require('phantomwright-driver');
 
 async function runTests() {
-  console.log('🧪 Testing phantomwright package...\n');
+  console.log('🧪 Testing phantomwright-driver package...\n');
 
   let browser;
   let passed = 0;
@@ -14,7 +14,7 @@ async function runTests() {
 
   try {
     // Test 1: Import check
-    console.log('Test 1: Import phantomwright...');
+    console.log('Test 1: Import phantomwright-driver...');
     if (chromium && typeof chromium.launch === 'function') {
       console.log('  ✅ Import successful\n');
       passed++;
@@ -91,7 +91,7 @@ async function runTests() {
   console.log(`\n📊 Test Results: ${passed} passed, ${failed} failed\n`);
   
   if (failed === 0) {
-    console.log('✅ All tests passed! phantomwright is working correctly.\n');
+    console.log('✅ All tests passed! phantomwright-driver is working correctly.\n');
     process.exit(0);
   } else {
     console.log('❌ Some tests failed.\n');

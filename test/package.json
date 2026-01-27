@@ -4,9 +4,9 @@
   "description": "Test suite for phantomwright npm package",
   "scripts": {
     "test": "node test_phantomwright.js",
-    "install-browser": "npx phantomwright install chromium"
+    "install-browser": "npx patchright install chromium"
   },
   "dependencies": {
-    "phantomwright": "latest"
+    "phantomwright-driver": "latest"
   }
 }

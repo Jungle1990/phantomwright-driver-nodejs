@@ -190,13 +190,13 @@ fs.rename("packages/playwright-core", "packages/phantomwright-core", (err) => {
         fs.readFile("../README.md", "utf8", (err, data) => {
             fs.writeFileSync("packages/phantomwright/README.md", data, "utf8", (err) => {});
         });
-        fs.writeFileSync("packages/phantomwright-core/README.md", "# phantomwright-core\n\nThis package contains the no-browser flavor of [Phantomwright-NodeJS](https://github.com/Jungle1990/phantomwright-driver-nodejs).", "utf8", (err) => {});
+        fs.writeFileSync("packages/phantomwright-core/README.md", "# phantomwright-driver-core\n\nThis package contains the no-browser flavor of [Phantomwright-Driver-NodeJS](https://github.com/Jungle1990/phantomwright-driver-nodejs).", "utf8", (err) => {});
 
         // Package.Json Files
         // playwright-core/package.json
         fs.readFile("packages/phantomwright-core/package.json", "utf8", (err, data) => {
           const packageJson = JSON.parse(data);
-          packageJson.name = "phantomwright-core";
+          packageJson.name = "phantomwright-driver-core";
           if (process.env.patchright_release && process.env.patchright_release.trim() !== "") {
             packageJson.version = process.env.patchright_release;
           }
@@ -205,7 +205,7 @@ fs.rename("packages/playwright-core", "packages/phantomwright-core", (err) => {
           packageJson.homepage = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
           packageJson.repository["url"] = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
           packageJson.bin = {
-            "phantomwright-core": "cli.js"
+            "patchright-core": "cli.js"
           }
 
           const updatedJsonData = JSON.stringify(packageJson, null, 4);
@@ -220,7 +220,7 @@ fs.rename("packages/playwright-core", "packages/phantomwright-core", (err) => {
         // playwright/package.json
         fs.readFile("packages/phantomwright/package.json", "utf8", (err, data) => {
           const packageJson = JSON.parse(data);
-          packageJson.name = "phantomwright";
+          packageJson.name = "phantomwright-driver";
           if (process.env.patchright_release && process.env.patchright_release.trim() !== "") {
             packageJson.version = process.env.patchright_release;
           }
@@ -228,10 +228,10 @@ fs.rename("packages/playwright-core", "packages/phantomwright-core", (err) => {
           packageJson.homepage = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
           packageJson.repository["url"] = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
           packageJson.bin = {
-            "phantomwright": "cli.js"
+            "patchright": "cli.js"
           }
           packageJson.dependencies = {
-            "phantomwright-core": packageJson.version
+            "phantomwright-driver-core": packageJson.version
           }
 
           const updatedJsonData = JSON.stringify(packageJson, null, 4);
