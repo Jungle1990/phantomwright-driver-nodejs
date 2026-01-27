@@ -115,18 +115,18 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Publish Phantomwright-Core Package
+      - name: Publish Phantomwright-Driver-Core Package
         if: steps.version_check.outputs.proceed == 'true'
         run: |
-          cd playwright/packages/phantomwright-core/
+          cd playwright/packages/phantomwright-driver-core/
           npm publish --access=public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish Phantomwright Package
+      - name: Publish Phantomwright-Driver Package
         if: steps.version_check.outputs.proceed == 'true'
         run: |
-          cd playwright/packages/phantomwright/
+          cd playwright/packages/phantomwright-driver/
           npm publish --access=public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
