@@ -1,166 +1,104 @@
 /**
- * driverPatchesFix.js - Fixes bugs in driver_patches/* files
+ * Fix patch for phantomwright-driver waitForSelector bug
  * 
- * This script patches the driver patch files BEFORE they're used to patch Playwright.
- * It fixes compatibility issues and bugs in the upstream patches.
+ * This script fixes two bugs in frames.js:
+ * 1. Missing `options` argument in _retryWithProgressIfNotConnected call
+ * 2. Invalid visibility check that tries to pass ElementHandle into browser context
  * 
- * Run: node driverPatchesFix.js
- * 
- * NOTE: This should run AFTER driver_patches is copied from the external repo
- * and BEFORE patchright_nodejs_patch.js is executed.
+ * Run after: "Patch Playwright-NodeJS Package" step
+ * Usage: node driverPatchesFix.js
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+const fs = require('fs');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const FRAMES_JS_PATH = path.join(__dirname, 'playwright/packages/playwright-core/src/server/frames.ts');
 
-console.log('🔧 Patching driver_patches to fix upstream bugs...\n');
+// The broken code pattern to find
+const BROKEN_CODE = `const promise = this._retryWithProgressIfNotConnected(progress, selector, options.strict, true, async (handle) => {
+      const attached = !!handle;
+      var visible = false;
+      if (attached) {
+        if (handle.parentNode.constructor.name == "ElementHandle") {
+          visible = await handle.parentNode.evaluateInUtility(([injected, node, { handle: handle2 }]) => {
+            return handle2 ? injected.utils.isElementVisible(handle2) : false;
+          }, { handle });
+        } else {
+          visible = await handle.parentNode.evaluate((injected, { handle: handle2 }) => {
+            return handle2 ? injected.utils.isElementVisible(handle2) : false;
+          }, { handle });
+        }
+      }`;
 
-let totalPatchCount = 0;
+// The fixed code replacement
+const FIXED_CODE = `const promise = this._retryWithProgressIfNotConnected(progress, selector, options, options.strict, true, async (handle) => {
+      const attached = !!handle;
+      var visible = false;
+      if (attached) {
+        try {
+          visible = await handle.evaluate((element) => {
+            if (!element) return false;
+            const style = window.getComputedStyle(element);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
+              return false;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          });
+        } catch (e) {
+          return "internal:continuepolling";
+        }
+      }`;
 
-// ============================================================
-// PART 1: Fix framesPatch.js
-// ============================================================
-const framesPatchPath = path.join(__dirname, 'driver_patches/framesPatch.js');
+function applyFix() {
+  console.log('🔧 Applying waitForSelector fix patch...\n');
 
-if (fs.existsSync(framesPatchPath)) {
-  console.log('--- Patching framesPatch.js ---');
-  let content = fs.readFileSync(framesPatchPath, 'utf8');
-  let patchCount = 0;
-
-  // FIX #1: setContent method - this._waitForLoadState should be this.waitForLoadState
-  if (content.includes('this._waitForLoadState(')) {
-    content = content.replace(/this\._waitForLoadState\(/g, 'this.waitForLoadState(');
-    console.log('✓ Fix #1 applied: Changed this._waitForLoadState to this.waitForLoadState');
-    patchCount++;
+  // Check if file exists
+  if (!fs.existsSync(FRAMES_JS_PATH)) {
+    console.error('❌ Error: frames.ts not found at:', FRAMES_JS_PATH);
+    process.exit(1);
   }
 
-  // FIX #2: _retryWithProgressIfNotConnected - Extract strict/performActionPreChecks from options
-  const brokenMethodBody = `retryWithProgressIfNotConnectedMethod.setBodyText(\`
-      progress.log("waiting for " + this._asLocator(selector));
-      return this.retryWithProgressAndTimeouts(progress, [0, 20, 50, 100, 100, 500], async continuePolling => {
-        return this._retryWithoutProgress(progress, selector, strict, performActionPreChecks, action, returnAction, continuePolling);
-      });
-    \`);`;
+  // Read the file
+  let content = fs.readFileSync(FRAMES_JS_PATH, 'utf8');
+  console.log('📖 Read frames.ts successfully');
 
-  const fixedMethodBody = `retryWithProgressIfNotConnectedMethod.setBodyText(\`
-      const strict = options.strict;
-      const performActionPreChecks = options.performActionPreChecks;
-      progress.log("waiting for " + this._asLocator(selector));
-      return this.retryWithProgressAndTimeouts(progress, [0, 20, 50, 100, 100, 500], async continuePolling => {
-        return this._retryWithoutProgress(progress, selector, strict, performActionPreChecks, action, returnAction, continuePolling);
-      });
-    \`);`;
-
-  if (content.includes(brokenMethodBody)) {
-    content = content.replace(brokenMethodBody, fixedMethodBody);
-    console.log('✓ Fix #2 applied: Added extraction of strict/performActionPreChecks from options');
-    patchCount++;
-  }
-
-  // FIX #3: Update callers to use options object
-  const callerFixes = [
-    {
-      old: 'this._retryWithProgressIfNotConnected(progress, selector, options.strict, true, async handle => {',
-      new: 'this._retryWithProgressIfNotConnected(progress, selector, { strict: options.strict, performActionPreChecks: true }, async handle => {',
-      name: 'waitForSelector caller'
-    },
-    {
-      old: "this._retryWithProgressIfNotConnected(progress, selector, !isArray, false, action, 'returnAll')",
-      new: "this._retryWithProgressIfNotConnected(progress, selector, { strict: !isArray, performActionPreChecks: false }, action, 'returnAll')",
-      name: 'expect caller'
-    },
-    {
-      old: 'this._retryWithProgressIfNotConnected(progress, selector, options.strict, false, async (handle) => {',
-      new: 'this._retryWithProgressIfNotConnected(progress, selector, { strict: options.strict, performActionPreChecks: false }, async (handle) => {',
-      name: '_callOnElementOnceMatches caller'
-    }
-  ];
-
-  for (const fix of callerFixes) {
-    if (content.includes(fix.old)) {
-      content = content.replace(fix.old, fix.new);
-      console.log(`✓ Fix #3 applied: Fixed ${fix.name}`);
-      patchCount++;
-    }
-  }
-
-  fs.writeFileSync(framesPatchPath, content, 'utf8');
-  console.log(`framesPatch.js: ${patchCount} fix(es) applied\n`);
-  totalPatchCount += patchCount;
-} else {
-  console.log('⚠ framesPatch.js not found\n');
-}
-
-// ============================================================
-// PART 2: Fix crNetworkManagerPatch.js
-// ============================================================
-const crNetworkManagerPatchPath = path.join(__dirname, 'driver_patches/crNetworkManagerPatch.js');
-
-if (fs.existsSync(crNetworkManagerPatchPath)) {
-  console.log('--- Patching crNetworkManagerPatch.js ---');
-  let content = fs.readFileSync(crNetworkManagerPatchPath, 'utf8');
-  let patchCount = 0;
-
-  // FIX: Make RouteImpl constructor lookup more flexible
-  // The old code looks for exact signature: constructor(session: CRSession, interceptionId: string)
-  // But Playwright versions may have different signatures
-  const oldConstructorLookup = `.find((ctor) =>
-        ctor
-          .getText()
-          .includes("constructor(session: CRSession, interceptionId: string)"),
-      );`;
-  
-  const newConstructorLookup = `.find((ctor) => {
-        const text = ctor.getText();
-        // Match various constructor signatures across Playwright versions
-        return text.includes("constructor(") && 
-               text.includes("session") && 
-               text.includes("interceptionId");
-      });`;
-
-  if (content.includes(oldConstructorLookup)) {
-    content = content.replace(oldConstructorLookup, newConstructorLookup);
-    console.log('✓ Fix applied: Made RouteImpl constructor lookup more flexible');
-    patchCount++;
-  }
-
-  // Add safety check for undefined constructorDeclaration
-  const oldParametersLine = 'const parameters = constructorDeclaration.getParameters();';
-  const newParametersLine = `if (!constructorDeclaration) {
-      console.warn('⚠ Warning: RouteImpl constructor not found, skipping RouteImpl patches');
+  // Check if the broken code exists
+  if (!content.includes(BROKEN_CODE)) {
+    // Maybe already fixed or different version - try a more flexible search
+    if (content.includes('handle.parentNode.constructor.name == "ElementHandle"') && 
+        content.includes('handle.parentNode.evaluateInUtility')) {
+      console.log('⚠️  Found broken pattern but with different whitespace, attempting flexible fix...');
+      
+      // Use regex for more flexible matching
+      const brokenRegex = /const promise = this\._retryWithProgressIfNotConnected\(progress, selector, options\.strict, true, async \(handle\) => \{[\s\S]*?if \(handle\.parentNode\.constructor\.name == "ElementHandle"\) \{[\s\S]*?visible = await handle\.parentNode\.evaluateInUtility[\s\S]*?\}, \{ handle \}\);[\s\S]*?\} else \{[\s\S]*?visible = await handle\.parentNode\.evaluate[\s\S]*?\}, \{ handle \}\);[\s\S]*?\}[\s\S]*?\}/;
+      
+      if (brokenRegex.test(content)) {
+        content = content.replace(brokenRegex, FIXED_CODE);
+        console.log('✅ Applied fix using flexible matching');
+      } else {
+        console.error('❌ Could not match broken code pattern');
+        process.exit(1);
+      }
+    } else if (content.includes('handle.evaluate((element)') && content.includes('getComputedStyle(element)')) {
+      console.log('✅ Fix already applied, skipping...');
+      process.exit(0);
     } else {
-    const parameters = constructorDeclaration.getParameters();`;
-
-  if (content.includes(oldParametersLine) && !content.includes('Warning: RouteImpl constructor not found')) {
-    content = content.replace(oldParametersLine, newParametersLine);
-    
-    // Find where to close the if block - after the last body.addStatements
-    const lastBodyAddStatements = "body.addStatements(\"eventsHelper.addEventListener(this._session, 'Fetch.requestPaused', async e => await this._networkRequestIntercepted(e));\");";
-    if (content.includes(lastBodyAddStatements)) {
-      content = content.replace(lastBodyAddStatements, lastBodyAddStatements + '\n    }');
-      console.log('✓ Fix applied: Added safety check for undefined constructorDeclaration');
-      patchCount++;
+      console.error('❌ Could not find broken code pattern to fix');
+      console.log('   This may be a different version of playwright');
+      process.exit(1);
     }
+  } else {
+    // Exact match found, apply fix
+    content = content.replace(BROKEN_CODE, FIXED_CODE);
+    console.log('✅ Applied fix using exact matching');
   }
 
-  fs.writeFileSync(crNetworkManagerPatchPath, content, 'utf8');
-  console.log(`crNetworkManagerPatch.js: ${patchCount} fix(es) applied\n`);
-  totalPatchCount += patchCount;
-} else {
-  console.log('⚠ crNetworkManagerPatch.js not found\n');
+  // Write the fixed content back
+  fs.writeFileSync(FRAMES_JS_PATH, content, 'utf8');
+  console.log('💾 Saved fixed frames.ts');
+
+  console.log('\n🎉 waitForSelector fix patch applied successfully!');
 }
 
-// ============================================================
-// Summary
-// ============================================================
-console.log('═'.repeat(50));
-console.log(`✓ Driver patches fix completed! Total: ${totalPatchCount} fix(es) applied.`);
-
-if (totalPatchCount === 0) {
-  console.log('\n⚠ Warning: No fixes were applied.');
-  console.log('   The patches may have different structure or already be fixed.');
-}
+// Run the fix
+applyFix();
