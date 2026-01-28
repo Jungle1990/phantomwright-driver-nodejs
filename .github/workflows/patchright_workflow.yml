@@ -83,6 +83,12 @@ jobs:
           cd playwright
           node "../patchright_nodejs_patch.js"
 
+      - name: Apply Post-Patch Fixes
+        if: steps.version_check.outputs.proceed == 'true'
+        run: |
+          cd playwright
+          node "../patchright_nodejs_patch_fix.js"
+
       - name: Generate Playwright Channels
         if: steps.version_check.outputs.proceed == 'true'
         # Ignore the error exit code, as the script exits 1 when a file is modified.
