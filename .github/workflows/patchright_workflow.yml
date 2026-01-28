@@ -79,7 +79,7 @@ jobs:
 
       - name: Fix Upstream Patch Bugs
         if: steps.version_check.outputs.proceed == 'true'
-        run: node framesPatchPatch.js
+        run: node driverPatchesFix.js
 
       - name: Patch Playwright-NodeJS Package
         if: steps.version_check.outputs.proceed == 'true'
