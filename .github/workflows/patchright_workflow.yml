@@ -77,17 +77,15 @@ jobs:
           rm -rf phantomwright-driver
           curl -s "https://raw.githubusercontent.com/StudentWan/phantomwright-driver/refs/heads/main/patchright_driver_patch.js" | tail -n +13 >> patchright_nodejs_patch.js
 
+      - name: Fix Upstream Patch Bugs
+        if: steps.version_check.outputs.proceed == 'true'
+        run: node framesPatchPatch.js
+
       - name: Patch Playwright-NodeJS Package
         if: steps.version_check.outputs.proceed == 'true'
         run: |
           cd playwright
           node "../patchright_nodejs_patch.js"
-
-      - name: Apply Post-Patch Fixes
-        if: steps.version_check.outputs.proceed == 'true'
-        run: |
-          cd playwright
-          node "../patchright_nodejs_patch_fix.js"
 
       - name: Generate Playwright Channels
         if: steps.version_check.outputs.proceed == 'true'
