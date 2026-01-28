@@ -461,6 +461,67 @@ const clientTracingClass = tracingSourceFile.getClass("Tracing");
 const tracingStartMethod = clientTracingClass.getMethod("start");
 tracingStartMethod.insertStatements(0, "await this._parent.installInjectRoute();");
 
+
+// ----------------------------
+// server/frames.ts - Fix waitForSelector and setContent bugs
+// ----------------------------
+const serverFramesSourceFile = project.addSourceFileAtPath(
+  "packages/playwright-core/src/server/frames.ts",
+);
+// ------- Frame Class -------
+const serverFrameClass = serverFramesSourceFile.getClass("Frame");
+
+// -- Fix 1: setContent method - change this._waitForLoadState to this.waitForLoadState --
+const setContentMethod = serverFrameClass.getMethod("setContent");
+if (setContentMethod) {
+  const setContentBody = setContentMethod.getBodyText();
+  if (setContentBody && setContentBody.includes("this._waitForLoadState")) {
+    const fixedBody = setContentBody.replace(
+      /this\._waitForLoadState\(progress, waitUntil\)/g,
+      "this.waitForLoadState(progress, waitUntil)"
+    );
+    setContentMethod.setBodyText(fixedBody);
+  }
+}
+
+// -- Fix 2: waitForSelector method - fix _retryWithProgressIfNotConnected call parameters --
+const waitForSelectorMethod = serverFrameClass.getMethod("waitForSelector");
+if (waitForSelectorMethod) {
+  const waitForSelectorBody = waitForSelectorMethod.getBodyText();
+  if (waitForSelectorBody && waitForSelectorBody.includes("this._retryWithProgressIfNotConnected(progress, selector, options.strict, true,")) {
+    const fixedBody = waitForSelectorBody.replace(
+      /this\._retryWithProgressIfNotConnected\(progress, selector, options\.strict, true,/g,
+      "this._retryWithProgressIfNotConnected(progress, selector, { strict: options.strict, performActionPreChecks: true },"
+    );
+    waitForSelectorMethod.setBodyText(fixedBody);
+  }
+}
+
+// -- Fix 3: _retryWithProgressIfNotConnected method - extract strict and performActionPreChecks from options --
+const retryWithProgressMethod = serverFrameClass.getMethod("_retryWithProgressIfNotConnected");
+if (retryWithProgressMethod) {
+  const retryBody = retryWithProgressMethod.getBodyText();
+  if (retryBody && retryBody.includes("this._retryWithoutProgress(progress, selector, strict, performActionPreChecks,")) {
+    const fixedBody = retryBody.replace(
+      /this\._retryWithoutProgress\(progress, selector, strict, performActionPreChecks,/g,
+      "this._retryWithoutProgress(progress, selector, options.strict, options.performActionPreChecks,"
+    );
+    retryWithProgressMethod.setBodyText(fixedBody);
+  }
+}
+
+// -- Fix 4: evaluateInContext method - fix another _retryWithProgressIfNotConnected call --
+const evaluateInContextMethod = serverFrameClass.getMethod("evaluateInContext");
+if (evaluateInContextMethod) {
+  const evalBody = evaluateInContextMethod.getBodyText();
+  if (evalBody && evalBody.includes("this._retryWithProgressIfNotConnected(progress, selector, options.strict, false,")) {
+    const fixedBody = evalBody.replace(
+      /this\._retryWithProgressIfNotConnected\(progress, selector, options\.strict, false,/g,
+      "this._retryWithProgressIfNotConnected(progress, selector, { strict: options.strict, performActionPreChecks: false },"
+    );
+    evaluateInContextMethod.setBodyText(fixedBody);
+  }
+}
 // Here the Driver Patch will be added by fetching the code from the main Driver Repository (in the workflow).
 // The URL from which the code is added is: https://raw.githubusercontent.com/Kaliiiiiiiiii-Vinyzu/patchright/refs/heads/main/patchright_driver_patch.js
 // Note: The Project is also synced (saved) in this code, so we dont need to add it here.
