@@ -38,7 +38,7 @@ Set-Location $ScriptDir
 
 # Step 1: Clean previous build if requested
 if ($CleanBuild) {
-    Write-Host "[1/9] Cleaning previous build..." -ForegroundColor Green
+    Write-Host "[1/8] Cleaning previous build..." -ForegroundColor Green
     if (Test-Path "playwright") {
         Remove-Item -Recurse -Force "playwright"
         Write-Host "  Removed playwright directory" -ForegroundColor Gray
@@ -52,17 +52,17 @@ if ($CleanBuild) {
         Write-Host "  Removed driver_patches directory" -ForegroundColor Gray
     }
 } else {
-    Write-Host "[1/9] Skipping clean (use -CleanBuild to clean)" -ForegroundColor Gray
+    Write-Host "[1/8] Skipping clean (use -CleanBuild to clean)" -ForegroundColor Gray
 }
 
 # Step 2: Install TS-Morph dependencies
-Write-Host "[2/9] Installing TS-Morph dependencies..." -ForegroundColor Green
+Write-Host "[2/8] Installing TS-Morph dependencies..." -ForegroundColor Green
 npm install
 if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
 
 # Step 3: Clone Playwright
 if (-not $SkipClone) {
-    Write-Host "[3/9] Cloning Playwright repository (tag: $PlaywrightVersion)..." -ForegroundColor Green
+    Write-Host "[3/8] Cloning Playwright repository (tag: $PlaywrightVersion)..." -ForegroundColor Green
     if (Test-Path "playwright") {
         Write-Host "  Removing existing playwright directory..." -ForegroundColor Gray
         Remove-Item -Recurse -Force "playwright"
@@ -76,11 +76,11 @@ if (-not $SkipClone) {
     if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
     Set-Location $ScriptDir
 } else {
-    Write-Host "[3/9] Skipping clone (use without -SkipClone to clone fresh)" -ForegroundColor Gray
+    Write-Host "[3/8] Skipping clone (use without -SkipClone to clone fresh)" -ForegroundColor Gray
 }
 
 # Step 4: Copy Patchright Patch Scripts
-Write-Host "[4/9] Copying Patchright patch scripts..." -ForegroundColor Green
+Write-Host "[4/8] Copying Patchright patch scripts..." -ForegroundColor Green
 if (Test-Path "phantomwright-driver") {
     Remove-Item -Recurse -Force "phantomwright-driver"
 }
@@ -101,18 +101,13 @@ Remove-Item -Recurse -Force "phantomwright-driver"
 Write-Host "  Patch scripts copied successfully" -ForegroundColor Gray
 
 # Step 5: Patch Playwright-NodeJS Package
-Write-Host "[5/9] Patching Playwright-NodeJS package..." -ForegroundColor Green
+Write-Host "[5/8] Patching Playwright-NodeJS package..." -ForegroundColor Green
 Set-Location "playwright"
 node "../patchright_nodejs_patch.js"
 Set-Location $ScriptDir
 
-# Step 6: Apply waitForSelector Fix Patch
-Write-Host "[6/9] Applying waitForSelector fix patch..." -ForegroundColor Green
-node driverPatchesFix.js
-if ($LASTEXITCODE -ne 0) { throw "driverPatchesFix.js failed" }
-
-# Step 7: Generate Playwright Channels
-Write-Host "[7/9] Generating Playwright channels..." -ForegroundColor Green
+# Step 6: Generate Playwright Channels
+Write-Host "[6/8] Generating Playwright channels..." -ForegroundColor Green
 Set-Location "playwright"
 try {
     node utils/generate_channels.js
@@ -122,15 +117,15 @@ try {
 }
 Set-Location $ScriptDir
 
-# Step 8: Build Playwright-NodeJS Package
-Write-Host "[8/9] Building Playwright-NodeJS package..." -ForegroundColor Green
+# Step 7: Build Playwright-NodeJS Package
+Write-Host "[7/8] Building Playwright-NodeJS package..." -ForegroundColor Green
 Set-Location "playwright"
 npm run build
 if ($LASTEXITCODE -ne 0) { throw "npm run build failed" }
 Set-Location $ScriptDir
 
-# Step 9: Rebrand to Patchright-NodeJS Package
-Write-Host "[9/9] Rebranding to Phantomwright-Driver package..." -ForegroundColor Green
+# Step 8: Rebrand to Patchright-NodeJS Package
+Write-Host "[8/8] Rebranding to Phantomwright-Driver package..." -ForegroundColor Green
 Set-Location "playwright"
 node "../patchright_nodejs_rebranding.js"
 if ($LASTEXITCODE -ne 0) { throw "patchright_nodejs_rebranding.js failed" }

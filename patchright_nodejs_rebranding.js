@@ -102,7 +102,7 @@ function getAllJsTsFiles(dir){
     return results;
 }
 
-// Main function to rename imports and exports from "playwright-core" to "patchright-core"
+// Main function to rename imports and exports from "playwright-core" to "phantomwright-driver-core"
 function renameImportsAndExportsInDirectory(directoryPath) {
     const project = new Project();
 
