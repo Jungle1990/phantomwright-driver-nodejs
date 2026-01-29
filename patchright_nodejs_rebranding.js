@@ -183,68 +183,60 @@ function renameImportsAndExportsInDirectory(directoryPath) {
 }
 
 
-// Renaming the folders and using context managers to ensure they finished
-fs.rename("packages/playwright-core", "packages/phantomwright-driver-core", (err) => {
-    fs.rename("packages/playwright", "packages/phantomwright-driver", (err) => {
-        // Write the Projects README to the README which is used in the release
-        fs.readFile("../README.md", "utf8", (err, data) => {
-            fs.writeFileSync("packages/phantomwright-driver/README.md", data, "utf8", (err) => {});
-        });
-        fs.writeFileSync("packages/phantomwright-driver-core/README.md", "# phantomwright-driver-core\n\nThis package contains the no-browser flavor of [Phantomwright-Driver-NodeJS](https://github.com/Jungle1990/phantomwright-driver-nodejs).", "utf8", (err) => {});
+// Renaming the folders synchronously to ensure they complete before writing files
+fs.renameSync("packages/playwright-core", "packages/phantomwright-driver-core");
+fs.renameSync("packages/playwright", "packages/phantomwright-driver");
 
-        // Package.Json Files
-        // playwright-core/package.json
-        fs.readFile("packages/phantomwright-driver-core/package.json", "utf8", (err, data) => {
-          const packageJson = JSON.parse(data);
-          packageJson.name = "phantomwright-driver-core";
-          if (process.env.patchright_release && process.env.patchright_release.trim() !== "") {
-            packageJson.version = process.env.patchright_release;
-          }
+// Write the Projects README to the README which is used in the release
+{
+    const readmeData = fs.readFileSync("../README.md", "utf8");
+    fs.writeFileSync("packages/phantomwright-driver/README.md", readmeData, "utf8");
+    fs.writeFileSync("packages/phantomwright-driver-core/README.md", "# phantomwright-driver-core\n\nThis package contains the no-browser flavor of [Phantomwright-Driver-NodeJS](https://github.com/Jungle1990/phantomwright-driver-nodejs).", "utf8");
 
-          packageJson.author["name"] = "Microsoft Corportation, patched by github.com/Jungle1990/";
-          packageJson.homepage = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
-          packageJson.repository["url"] = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
-          packageJson.bin = {
-            "patchright-core": "cli.js"
-          }
+    // Package.Json Files
+    // playwright-core/package.json
+    {
+      const data = fs.readFileSync("packages/phantomwright-driver-core/package.json", "utf8");
+      const packageJson = JSON.parse(data);
+      packageJson.name = "phantomwright-driver-core";
+      if (process.env.patchright_release && process.env.patchright_release.trim() !== "") {
+        packageJson.version = process.env.patchright_release;
+      }
 
-          const updatedJsonData = JSON.stringify(packageJson, null, 4);
-          fs.writeFile("packages/phantomwright-driver-core/package.json", updatedJsonData, 'utf8', (err) => {
-            if (err) {
-                        console.log('Error writing to the file:', err);
-                    } else {
-                        console.log('JSON file has been updated successfully.');
-                    }
-          });
-        });
-        // playwright/package.json
-        fs.readFile("packages/phantomwright-driver/package.json", "utf8", (err, data) => {
-          const packageJson = JSON.parse(data);
-          packageJson.name = "phantomwright-driver";
-          if (process.env.patchright_release && process.env.patchright_release.trim() !== "") {
-            packageJson.version = process.env.patchright_release;
-          }
-          packageJson.author["name"] = "Microsoft Corportation, patched by github.com/Jungle1990/";
-          packageJson.homepage = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
-          packageJson.repository["url"] = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
-          packageJson.bin = {
-            "patchright": "cli.js"
-          }
-          packageJson.dependencies = {
-            "phantomwright-driver-core": packageJson.version
-          }
+      packageJson.author["name"] = "Microsoft Corportation, patched by github.com/Jungle1990/";
+      packageJson.homepage = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
+      packageJson.repository["url"] = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
+      packageJson.bin = {
+        "patchright-core": "cli.js"
+      }
 
-          const updatedJsonData = JSON.stringify(packageJson, null, 4);
-          fs.writeFile("packages/phantomwright-driver/package.json", updatedJsonData, 'utf8', (err) => {
-            if (err) {
-                        console.log('Error writing to the file:', err);
-                    } else {
-                        console.log('JSON file has been updated successfully.');
-                    }
-          });
-        });
+      const updatedJsonData = JSON.stringify(packageJson, null, 4);
+      fs.writeFileSync("packages/phantomwright-driver-core/package.json", updatedJsonData, 'utf8');
+      console.log('phantomwright-driver-core package.json has been updated successfully.');
+    }
+    // playwright/package.json
+    {
+      const data = fs.readFileSync("packages/phantomwright-driver/package.json", "utf8");
+      const packageJson = JSON.parse(data);
+      packageJson.name = "phantomwright-driver";
+      if (process.env.patchright_release && process.env.patchright_release.trim() !== "") {
+        packageJson.version = process.env.patchright_release;
+      }
+      packageJson.author["name"] = "Microsoft Corportation, patched by github.com/Jungle1990/";
+      packageJson.homepage = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
+      packageJson.repository["url"] = "https://github.com/Jungle1990/phantomwright-driver-nodejs"
+      packageJson.bin = {
+        "patchright": "cli.js"
+      }
+      packageJson.dependencies = {
+        "phantomwright-driver-core": packageJson.version
+      }
 
-        // Usage example: pass the directory path as an argument
-        renameImportsAndExportsInDirectory("packages/phantomwright-driver");
-    })
-})
+      const updatedJsonData = JSON.stringify(packageJson, null, 4);
+      fs.writeFileSync("packages/phantomwright-driver/package.json", updatedJsonData, 'utf8');
+      console.log('phantomwright-driver package.json has been updated successfully.');
+    }
+
+    // Usage example: pass the directory path as an argument
+    renameImportsAndExportsInDirectory("packages/phantomwright-driver");
+}

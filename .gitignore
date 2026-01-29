@@ -163,4 +163,14 @@ cython_debug/
 .DS_Store
 
 # Node modules
+node_modules/
+package-lock.json
 test/node_modules
+test/package-lock.json
+
+# Build artifacts
+driver_patches/
+playwright/
+
+# Test artifacts
+test/*.png

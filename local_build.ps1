@@ -3,18 +3,13 @@
 #
 # Usage: 
 #   .\local_build.ps1 -PlaywrightVersion "v1.50.1"
-#   .\local_build.ps1 -PlaywrightVersion "v1.50.1" -SkipClone
-#   .\local_build.ps1 -PlaywrightVersion "v1.50.1" -CleanBuild
+#   .\local_build.ps1 -PlaywrightVersion "v1.57.0" -PackageVersion "1.57.0"
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$PlaywrightVersion,
     
-    [string]$PackageVersion,  # e.g. "1.50.1" - defaults to PlaywrightVersion without 'v' prefix
-    
-    [switch]$SkipClone,
-    [switch]$CleanBuild,
-    [switch]$SkipPublish
+    [string]$PackageVersion  # e.g. "1.50.1" - defaults to PlaywrightVersion without 'v' prefix
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,55 +31,32 @@ Write-Host ""
 
 Set-Location $ScriptDir
 
-# Step 1: Clean previous build if requested
-if ($CleanBuild) {
-    Write-Host "[1/8] Cleaning previous build..." -ForegroundColor Green
-    if (Test-Path "playwright") {
-        Remove-Item -Recurse -Force "playwright"
-        Write-Host "  Removed playwright directory" -ForegroundColor Gray
-    }
-    if (Test-Path "phantomwright-driver") {
-        Remove-Item -Recurse -Force "phantomwright-driver"
-        Write-Host "  Removed phantomwright-driver directory" -ForegroundColor Gray
-    }
-    if (Test-Path "driver_patches") {
-        Remove-Item -Recurse -Force "driver_patches"
-        Write-Host "  Removed driver_patches directory" -ForegroundColor Gray
-    }
-} else {
-    Write-Host "[1/8] Skipping clean (use -CleanBuild to clean)" -ForegroundColor Gray
-}
-
-# Step 2: Install TS-Morph dependencies
-Write-Host "[2/8] Installing TS-Morph dependencies..." -ForegroundColor Green
+# Step 1: Install TS-Morph dependencies
+Write-Host "[1/7] Installing TS-Morph dependencies..." -ForegroundColor Green
 npm install
 if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
 
-# Step 3: Clone Playwright
-if (-not $SkipClone) {
-    Write-Host "[3/8] Cloning Playwright repository (tag: $PlaywrightVersion)..." -ForegroundColor Green
-    if (Test-Path "playwright") {
-        Write-Host "  Removing existing playwright directory..." -ForegroundColor Gray
-        Remove-Item -Recurse -Force "playwright"
-    }
-    git clone https://github.com/microsoft/playwright --branch $PlaywrightVersion --depth 1
-    if ($LASTEXITCODE -ne 0) { throw "git clone playwright failed" }
-    
-    Set-Location "playwright"
-    Write-Host "  Running npm ci..." -ForegroundColor Gray
-    npm ci
-    if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
-    Set-Location $ScriptDir
-} else {
-    Write-Host "[3/8] Skipping clone (use without -SkipClone to clone fresh)" -ForegroundColor Gray
+# Step 2: Clone Playwright
+Write-Host "[2/7] Cloning Playwright repository (tag: $PlaywrightVersion)..." -ForegroundColor Green
+if (Test-Path "playwright") {
+    Write-Host "  Removing existing playwright directory..." -ForegroundColor Gray
+    Remove-Item -Recurse -Force "playwright"
 }
+git clone https://github.com/microsoft/playwright --branch $PlaywrightVersion
+if ($LASTEXITCODE -ne 0) { throw "git clone playwright failed" }
 
-# Step 4: Copy Patchright Patch Scripts
-Write-Host "[4/8] Copying Patchright patch scripts..." -ForegroundColor Green
+Set-Location "playwright"
+Write-Host "  Running npm ci..." -ForegroundColor Gray
+npm ci
+if ($LASTEXITCODE -ne 0) { throw "npm ci failed" }
+Set-Location $ScriptDir
+
+# Step 3: Copy Patchright Patch Scripts
+Write-Host "[3/7] Copying Patchright patch scripts..." -ForegroundColor Green
 if (Test-Path "phantomwright-driver") {
     Remove-Item -Recurse -Force "phantomwright-driver"
 }
-git clone https://github.com/StudentWan/phantomwright-driver.git --depth 1
+git clone https://github.com/StudentWan/phantomwright-driver.git
 if ($LASTEXITCODE -ne 0) { throw "git clone phantomwright-driver failed" }
 
 if (Test-Path "driver_patches") {
@@ -100,14 +72,14 @@ Add-Content -Path "patchright_nodejs_patch.js" -Value ($lines -join "`n")
 Remove-Item -Recurse -Force "phantomwright-driver"
 Write-Host "  Patch scripts copied successfully" -ForegroundColor Gray
 
-# Step 5: Patch Playwright-NodeJS Package
-Write-Host "[5/8] Patching Playwright-NodeJS package..." -ForegroundColor Green
+# Step 4: Patch Playwright-NodeJS Package
+Write-Host "[4/7] Patching Playwright-NodeJS package..." -ForegroundColor Green
 Set-Location "playwright"
 node "../patchright_nodejs_patch.js"
 Set-Location $ScriptDir
 
-# Step 6: Generate Playwright Channels
-Write-Host "[6/8] Generating Playwright channels..." -ForegroundColor Green
+# Step 5: Generate Playwright Channels
+Write-Host "[5/7] Generating Playwright channels..." -ForegroundColor Green
 Set-Location "playwright"
 try {
     node utils/generate_channels.js
@@ -117,15 +89,15 @@ try {
 }
 Set-Location $ScriptDir
 
-# Step 7: Build Playwright-NodeJS Package
-Write-Host "[7/8] Building Playwright-NodeJS package..." -ForegroundColor Green
+# Step 6: Build Playwright-NodeJS Package
+Write-Host "[6/7] Building Playwright-NodeJS package..." -ForegroundColor Green
 Set-Location "playwright"
 npm run build
 if ($LASTEXITCODE -ne 0) { throw "npm run build failed" }
 Set-Location $ScriptDir
 
-# Step 8: Rebrand to Patchright-NodeJS Package
-Write-Host "[8/8] Rebranding to Phantomwright-Driver package..." -ForegroundColor Green
+# Step 7: Rebrand to Patchright-NodeJS Package
+Write-Host "[7/7] Rebranding to Phantomwright-Driver package..." -ForegroundColor Green
 Set-Location "playwright"
 node "../patchright_nodejs_rebranding.js"
 if ($LASTEXITCODE -ne 0) { throw "patchright_nodejs_rebranding.js failed" }
@@ -164,17 +136,13 @@ Write-Host "Built packages:" -ForegroundColor Yellow
 Write-Host "  - playwright/packages/phantomwright-driver-core/" -ForegroundColor Gray
 Write-Host "  - playwright/packages/phantomwright-driver/" -ForegroundColor Gray
 Write-Host ""
-
-if (-not $SkipPublish) {
-    Write-Host "To publish (dry-run):" -ForegroundColor Yellow
-    Write-Host '  cd playwright/packages/phantomwright-driver-core; npm publish --dry-run' -ForegroundColor Gray
-    Write-Host '  cd playwright/packages/phantomwright-driver; npm publish --dry-run' -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "To publish (real):" -ForegroundColor Yellow
-    Write-Host '  cd playwright/packages/phantomwright-driver-core; npm publish --access=public' -ForegroundColor Gray
-    Write-Host '  cd playwright/packages/phantomwright-driver; npm publish --access=public' -ForegroundColor Gray
-}
-
+Write-Host "To publish (dry-run):" -ForegroundColor Yellow
+Write-Host '  cd playwright/packages/phantomwright-driver-core; npm publish --dry-run' -ForegroundColor Gray
+Write-Host '  cd playwright/packages/phantomwright-driver; npm publish --dry-run' -ForegroundColor Gray
+Write-Host ""
+Write-Host "To publish (real):" -ForegroundColor Yellow
+Write-Host '  cd playwright/packages/phantomwright-driver-core; npm publish --access=public' -ForegroundColor Gray
+Write-Host '  cd playwright/packages/phantomwright-driver; npm publish --access=public' -ForegroundColor Gray
 Write-Host ""
 Write-Host "To test the built package locally:" -ForegroundColor Yellow
 Write-Host '  cd test' -ForegroundColor Gray

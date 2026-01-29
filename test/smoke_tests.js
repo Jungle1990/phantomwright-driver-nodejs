@@ -4,6 +4,7 @@
  */
 
 const { chromium } = require('phantomwright-driver');
+const { chromium: playwrightChromium } = require('playwright');
 
 async function runTests() {
   console.log('🧪 Testing phantomwright-driver package...\n');
@@ -71,11 +72,44 @@ async function runTests() {
 
     // Test 7: Screenshot
     console.log('Test 7: Take screenshot...');
-    await page.screenshot({ path: 'test/screenshot.png' });
-    console.log('  ✅ Screenshot saved to test/screenshot.png\n');
+    const path = require('path');
+    const screenshotPath = path.join(__dirname, 'screenshot.png');
+    await page.screenshot({ path: screenshotPath });
+    console.log(`  ✅ Screenshot saved to ${screenshotPath}\n`);
     passed++;
 
+    // Test 8: Locator waitFor()
+    console.log('Test 8: Locator waitFor()...');
+    await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+    console.log('  ✅ waitFor() completed\n');
+    passed++;
+
+    // Test 9: Locator count
+    console.log('Test 9: Locator count...');
+    const count = await page.locator('h1').count();
+    if (count === 1) {
+      console.log(`  ✅ Locator count: ${count}\n`);
+      passed++;
+    } else {
+      throw new Error(`Unexpected locator count: ${count}`);
+    }
+
     await page.close();
+
+    // Test 10: Compare with Playwright locator behavior
+    console.log('Test 10: Compare with Playwright locator...');
+    const pwBrowser = await playwrightChromium.launch({ headless: true });
+    const pwPage = await pwBrowser.newPage();
+    await pwPage.goto('https://example.com');
+    await pwPage.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
+    const pwCount = await pwPage.locator('h1').count();
+    await pwBrowser.close();
+    if (pwCount === count) {
+      console.log(`  ✅ Playwright locator matches (count: ${pwCount})\n`);
+      passed++;
+    } else {
+      throw new Error(`Playwright count (${pwCount}) != phantomwright count (${count})`);
+    }
 
   } catch (error) {
     console.log(`  ❌ Error: ${error.message}\n`);
