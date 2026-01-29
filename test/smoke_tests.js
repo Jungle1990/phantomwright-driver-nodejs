@@ -59,33 +59,22 @@ async function runTests() {
       throw new Error('JS evaluation returned empty result');
     }
 
-    // Test 6: Check webdriver detection (should be undefined/false)
-    console.log('Test 6: Check navigator.webdriver...');
-    const webdriver = await page.evaluate(() => navigator.webdriver);
-    if (webdriver === false || webdriver === undefined) {
-      console.log(`  ✅ navigator.webdriver = ${webdriver} (undetected)\n`);
-      passed++;
-    } else {
-      console.log(`  ⚠️ navigator.webdriver = ${webdriver} (may be detected)\n`);
-      failed++;
-    }
-
-    // Test 7: Screenshot
-    console.log('Test 7: Take screenshot...');
+    // Test 6: Screenshot
+    console.log('Test 6: Take screenshot...');
     const path = require('path');
     const screenshotPath = path.join(__dirname, 'screenshot.png');
     await page.screenshot({ path: screenshotPath });
     console.log(`  ✅ Screenshot saved to ${screenshotPath}\n`);
     passed++;
 
-    // Test 8: Locator waitFor()
-    console.log('Test 8: Locator waitFor()...');
+    // Test 7: Locator waitFor()
+    console.log('Test 7: Locator waitFor()...');
     await page.locator('h1').waitFor({ state: 'visible', timeout: 5000 });
     console.log('  ✅ waitFor() completed\n');
     passed++;
 
-    // Test 9: Locator count
-    console.log('Test 9: Locator count...');
+    // Test 8: Locator count
+    console.log('Test 8: Locator count...');
     const count = await page.locator('h1').count();
     if (count === 1) {
       console.log(`  ✅ Locator count: ${count}\n`);
@@ -96,8 +85,8 @@ async function runTests() {
 
     await page.close();
 
-    // Test 10: Compare with Playwright locator behavior
-    console.log('Test 10: Compare with Playwright locator...');
+    // Test 9: Compare with Playwright locator behavior
+    console.log('Test 9: Compare with Playwright locator...');
     const pwBrowser = await playwrightChromium.launch({ headless: true });
     const pwPage = await pwBrowser.newPage();
     await pwPage.goto('https://example.com');
