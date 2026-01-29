@@ -61,12 +61,12 @@ Key Features:
 ## Install it from NPM
 
 ```bash
-# Install Patchright from NPM
-npm i patchright
+# Install Phantomwright-Driver from NPM
+npm i phantomwright-driver
 ```
 
 ```bash
-# Install Chromium-Driver for Patchright
+# Install Chromium-Driver for Phantomwright-Driver
 npx patchright install chromium
 ```
 
@@ -79,8 +79,8 @@ npx patchright install chromium
 > Patchright only patches CHROMIUM based browsers. Firefox and Webkit are not supported.
 
 ```js
-// patchright here!
-const { chromium } = require('patchright');
+// phantomwright-driver here!
+const { chromium } = require('phantomwright-driver');
 
 (async () => {
   const browser = await chromium.launch();

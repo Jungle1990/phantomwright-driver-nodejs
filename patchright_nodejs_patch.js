@@ -462,6 +462,5 @@ const tracingStartMethod = clientTracingClass.getMethod("start");
 tracingStartMethod.insertStatements(0, "await this._parent.installInjectRoute();");
 
 // Here the Driver Patch will be added by fetching the code from the main Driver Repository (in the workflow).
-// The URL from which the code is added is: https://raw.githubusercontent.com/Kaliiiiiiiiii-Vinyzu/patchright/refs/heads/main/patchright_driver_patch.js
+// The URL from which the code is added is: https://raw.githubusercontent.com/StudentWan/phantomwright-driver/refs/heads/main/patchright_driver_patch.js
 // Note: The Project is also synced (saved) in this code, so we dont need to add it here.
-

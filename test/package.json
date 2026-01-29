@@ -1,0 +1,13 @@
+{
+  "name": "phantomwright-driver-test",
+  "version": "1.0.0",
+  "description": "Test suite for phantomwright-driver npm package",
+  "scripts": {
+    "test": "node smoke_tests.js",
+    "install-browser": "npx patchright install chromium"
+  },
+  "dependencies": {
+    "phantomwright-driver": "1.57.1",
+    "playwright": "1.57.0"
+  }
+}
