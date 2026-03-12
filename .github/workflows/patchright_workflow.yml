@@ -103,6 +103,10 @@ jobs:
           cd playwright
           node "../patchright_nodejs_rebranding.js"
 
+      - name: Delete Existing Release if Exists
+        if: steps.version_check.outputs.proceed == 'true'
+        run: gh release delete ${{ env.playwright_version }} --repo ${{ env.REPO }} --yes || true
+
       - name: Create Empty Versioning Release
         if: steps.version_check.outputs.proceed == 'true'
         uses: actions/create-release@v1
