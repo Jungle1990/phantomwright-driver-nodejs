@@ -119,14 +119,10 @@ jobs:
         if: steps.version_check.outputs.proceed == 'true'
         run: |
           cd playwright/packages/phantomwright-driver-core/
-          npm publish --access=public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access=public
 
       - name: Publish Phantomwright-Driver Package
         if: steps.version_check.outputs.proceed == 'true'
         run: |
           cd playwright/packages/phantomwright-driver/
-          npm publish --access=public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access=public
