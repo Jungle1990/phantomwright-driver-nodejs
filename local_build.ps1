@@ -56,7 +56,7 @@ Write-Host "[3/7] Copying Patchright patch scripts..." -ForegroundColor Green
 if (Test-Path "phantomwright-driver") {
     Remove-Item -Recurse -Force "phantomwright-driver"
 }
-git clone https://github.com/StudentWan/phantomwright-driver.git
+git clone --recurse-submodules https://github.com/StudentWan/phantomwright-driver.git
 if ($LASTEXITCODE -ne 0) { throw "git clone phantomwright-driver failed" }
 
 if (Test-Path "driver_patches") {
@@ -64,10 +64,13 @@ if (Test-Path "driver_patches") {
 }
 Copy-Item -Recurse "phantomwright-driver/driver_patches" "./driver_patches"
 
-# Append driver patch content (skip first 12 lines)
-$patchContent = Invoke-WebRequest -Uri "https://raw.githubusercontent.com/StudentWan/phantomwright-driver/refs/heads/main/patchright_driver_patch.js" -UseBasicParsing
-$lines = $patchContent.Content -split "`n" | Select-Object -Skip 12
-Add-Content -Path "patchright_nodejs_patch.js" -Value ($lines -join "`n")
+if (Test-Path "patchright-nodejs") {
+    Remove-Item -Recurse -Force "patchright-nodejs"
+}
+Copy-Item -Recurse "phantomwright-driver/patchright-nodejs" "./patchright-nodejs"
+
+# Copy the driver patch script
+Copy-Item "phantomwright-driver/patchright_driver_patch.ts" "./patchright_driver_patch.ts"
 
 Remove-Item -Recurse -Force "phantomwright-driver"
 Write-Host "  Patch scripts copied successfully" -ForegroundColor Gray
@@ -75,7 +78,8 @@ Write-Host "  Patch scripts copied successfully" -ForegroundColor Gray
 # Step 4: Patch Playwright-NodeJS Package
 Write-Host "[4/7] Patching Playwright-NodeJS package..." -ForegroundColor Green
 Set-Location "playwright"
-node "../patchright_nodejs_patch.js"
+npx tsx "../patchright_driver_patch.ts"
+if ($LASTEXITCODE -ne 0) { throw "patchright_driver_patch.ts failed" }
 Set-Location $ScriptDir
 
 # Step 5: Generate Playwright Channels
